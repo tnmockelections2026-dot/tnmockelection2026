@@ -1,0 +1,466 @@
+<html>
+<head>
+<title>Tn Mock Election 2026>/title>
+</head>
+
+<body>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TN CM Mock Election 2026</title>
+<style>
+  :root {
+    --primary: #FF6200;
+    --primary-hover: #e65800;
+    --bg-main: #f4f6f8;
+    --bg-card: #ffffff;
+    --text-main: #1a1a1a;
+    --text-muted: #666666;
+    --border: #e0e0e0;
+    --success: #2e7d32;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { background-color: var(--bg-main); color: var(--text-main); display: flex; justify-content: center; min-height: 100vh; }
+  
+  #app-container { width: 100%; max-width: 480px; background: var(--bg-card); box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; display: flex; flex-direction: column; }
+  
+  .hero { background: linear-gradient(135deg, #FF6200 0%, #FF9933 45%, #138808 100%); padding: 2rem 1.5rem 1.5rem; text-align: center; position: relative; overflow: hidden; color: white; flex-shrink: 0; }
+  .hero::before { content:''; position:absolute; top:-50px; right:-50px; width:200px; height:200px; background:rgba(255,255,255,0.07); border-radius:50%; }
+  .hero h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .hero p { font-size: 13px; opacity: 0.9; }
+
+  .view { display: none; padding: 1.5rem; flex: 1; overflow-y: auto; }
+  .view.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; }
+  .form-control { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s; }
+  .form-control:focus { border-color: var(--primary); }
+  
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; text-align: center; display: block; text-decoration: none; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+  .btn-danger { background: #d32f2f; color: white; }
+
+  .cm-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 14px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
+  .cm-card:hover { border-color: #bdbdbd; }
+  .cm-card.selected { border-color: var(--primary); background: #fff8f5; }
+  
+  .avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; flex-shrink: 0; border: 2px solid #eee; background: #f5f5f5; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center 15%; }
+  
+  .cm-info { flex: 1; }
+  .cm-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  
+  .party-badge { display: inline-flex; align-items: center; gap: 6px; background: #f5f5f5; padding: 4px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .flag { width: 14px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.1); }
+  
+  .radio-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cm-card.selected .radio-dot { border-color: var(--primary); }
+  .cm-card.selected .radio-dot::after { content: ''; width: 12px; height: 12px; background: var(--primary); border-radius: 50%; }
+
+  /* ── RESULTS ── */
+  .result-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid #eee; background: #f5f5f5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .result-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center 15%; }
+  .result-item { margin-bottom: 20px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .result-party-info { display: flex; align-items: center; gap: 8px; }
+  .result-name { font-size: 14px; font-weight: 600; }
+  .result-pct-label { font-size: 14px; font-weight: 700; }
+  .bar-bg { width: 100%; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; width: 0%; transition: width 0.8s ease-out; }
+  .leading-tag { font-size: 10px; background: #fff3e0; color: #e65100; padding: 2px 7px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+  .result-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .leading-tag { font-size: 10px; background: #fff3e0; color: #e65100; padding: 2px 7px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+
+  .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 13px; }
+  .admin-table th, .admin-table td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+  .admin-table th { background: #f9f9f9; font-weight: 600; color: var(--text-muted); }
+
+  .text-center { text-align: center; }
+  .mt-4 { margin-top: 1.5rem; }
+  .alert { padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 1rem; display: none; }
+  .alert-error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+  .nav-links { display: flex; justify-content: space-between; padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: #fafafa; font-size: 12px; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  .nav-links a:hover { color: var(--primary); }
+
+  .summary-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
+  .summary-card { background: #f9f9f9; border-radius: 10px; padding: 12px; text-align: center; }
+  .summary-card .num { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .summary-card .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div id="app-container">
+  <div class="hero">
+    <h1>🏛️ TN Election 2026</h1>
+    <p>Mock Voting Portal</p>
+  </div>
+
+  <div id="view-login" class="view active">
+    <h2 style="font-size: 18px; margin-bottom: 1.5rem; text-align: center;">Voter Authentication</h2>
+    <div id="login-error" class="alert alert-error"></div>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="userName" class="form-control" required placeholder="e.g. Jason Sanjay">
+      </div>
+      <div class="form-group">
+        <label>Age</label>
+        <input type="number" id="userAge" class="form-control" required min="1" placeholder="Must be 18+">
+      </div>
+      <div class="form-group">
+        <label>District</label>
+        <select id="userDistrict" class="form-control" required>
+          <option value="">Select your district...</option>
+          <option>Ariyalur</option><option>Chengalpattu</option><option>Chennai</option>
+          <option>Coimbatore</option><option>Cuddalore</option><option>Dharmapuri</option>
+          <option>Dindigul</option><option>Erode</option><option>Kallakurichi</option>
+          <option>Kanchipuram</option><option>Kanyakumari</option><option>Karur</option>
+          <option>Krishnagiri</option><option>Madurai</option><option>Mayiladuthurai</option>
+          <option>Nagapattinam</option><option>Namakkal</option><option>Nilgiris</option>
+          <option>Perambalur</option><option>Pudukkottai</option><option>Ramanathapuram</option>
+          <option>Ranipet</option><option>Salem</option><option>Sivaganga</option>
+          <option>Tenkasi</option><option>Thanjavur</option><option>Theni</option>
+          <option>Thoothukudi</option><option>Tiruchirappalli</option><option>Tirunelveli</option>
+          <option>Tirupathur</option><option>Tiruppur</option><option>Tiruvallur</option>
+          <option>Tiruvannamalai</option><option>Tiruvarur</option><option>Vellore</option>
+          <option>Viluppuram</option><option>Virudhunagar</option><option>Other</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary mt-4">Enter Polling Booth</button>
+    </form>
+  </div>
+
+  <div id="view-voting" class="view">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h2 style="font-size: 16px;">Select Candidate</h2>
+      <span id="voter-badge" style="font-size: 11px; background: #eee; padding: 4px 8px; border-radius: 12px; font-weight: 600;"></span>
+    </div>
+    <div id="candidates-container"></div>
+    <button id="cast-vote-btn" class="btn btn-primary mt-4" disabled onclick="castVote()">Cast Vote Securely</button>
+  </div>
+
+  <div id="view-voted" class="view text-center">
+    <div style="font-size: 60px; margin-bottom: 1rem;">✅</div>
+    <h2 style="margin-bottom: 10px; color: var(--success);">Vote Recorded</h2>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 2rem;">Thank you, <strong id="success-name"></strong>. Your vote has been securely recorded. You cannot vote again.</p>
+    <button class="btn btn-outline" onclick="switchView('view-results')">View Live Results</button>
+  </div>
+
+  <div id="view-results" class="view">
+    <h2 style="font-size: 18px; margin-bottom: 1rem;">📊 Live Results</h2>
+
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="num" id="total-votes-big">0</div>
+        <div class="lbl">Total Votes Cast</div>
+      </div>
+      <div class="summary-card">
+        <div class="num" id="leading-name-big" style="font-size:15px; padding-top:4px;">—</div>
+        <div class="lbl">Current Leader</div>
+      </div>
+    </div>
+
+    <div id="results-container"></div>
+  </div>
+
+  <div id="view-admin" class="view">
+    <h2 style="font-size: 18px; margin-bottom: 1rem;">Admin Dashboard</h2>
+    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 1rem;">Overview of registered voters in this session.</p>
+    <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Age</th><th>District</th><th>Status</th></tr></thead>
+        <tbody id="admin-users-list"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-danger mt-4" onclick="resetElection()">⚠️ Reset Entire Election</button>
+  </div>
+
+  <div class="nav-links">
+    <a onclick="attemptGoHome()">🏠 Home</a>
+    <a onclick="switchView('view-results')">📊 Results</a>
+    <a onclick="promptAdmin()">⚙️ Admin</a>
+  </div>
+</div>
+
+<script>
+const candidatesData = [
+  { 
+    id: 'stalin', 
+    nameEn: "M. K. Stalin", 
+    party: "DMK", 
+    color: "#E53935", 
+    photo: "https://tn-mock-election2026.netlify.app/assets/stalin-BL6kc50k.jpg", 
+    flagBg: "linear-gradient(to bottom, #d32f2f 50%, #000000 50%)" 
+  },
+  { 
+    id: 'eps', 
+    nameEn: "E. K. Palaniswami", 
+    party: "ADMK", 
+    color: "#43A047", 
+    photo: "https://tn-mock-election2026.netlify.app/assets/edapadi-Cc674AIS.jpg", 
+    flagBg: "linear-gradient(to bottom, #000000 33%, #ffffff 33%, #ffffff 66%, #d32f2f 66%)" 
+  },
+  { 
+    id: 'vijay', 
+    nameEn: "Vijay", 
+    party: "TVK", 
+    color: "#F9A825", 
+    photo: "https://tn-mock-election2026.netlify.app/assets/vijay-BKFnhox8.jpg", 
+    flagBg: "linear-gradient(to bottom, #b71c1c 50%, #fbc02d 50%)" 
+  },
+  { 
+    id: 'seeman', 
+    nameEn: "Seeman", 
+    party: "NTK", 
+    color: "#FB8C00", 
+    photo: "https://tn-mock-election2026.netlify.app/assets/seeman-BKm8RPIs.jpeg", 
+    flagBg: "linear-gradient(to bottom, #d32f2f 50%, #fbc02d 50%)" 
+  },
+  { 
+    id: 'nota', 
+    nameEn: "NOTA", 
+    party: "None", 
+    color: "#9E9E9E", 
+    photo: null, 
+    flagBg: "#eeeeee" 
+  }
+];
+
+// Always start fresh — clear old data
+localStorage.removeItem('tn_mock_db_v2');
+localStorage.removeItem('tn_mock_user_v2');
+
+const initialDb = {
+  users: [],
+  votes: { stalin: 0, eps: 0, vijay: 0, seeman: 0, nota: 0 },
+  totalVotes: 0
+};
+localStorage.setItem('tn_mock_db_v2', JSON.stringify(initialDb));
+
+let currentUser = null;
+let selectedCandidateId = null;
+
+function switchView(viewId) {
+  if (viewId !== 'view-results' && liveInterval) {
+    clearInterval(liveInterval);
+    liveInterval = null;
+  }
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+  if (viewId === 'view-voting') renderCandidates();
+  if (viewId === 'view-results') renderResults();
+  if (viewId === 'view-admin') renderAdmin();
+}
+
+function attemptGoHome() {
+  if (!currentUser) switchView('view-login');
+  else if (currentUser.hasVoted) switchView('view-voted');
+  else switchView('view-voting');
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const name = document.getElementById('userName').value.trim();
+  const age = parseInt(document.getElementById('userAge').value);
+  const district = document.getElementById('userDistrict').value;
+  const errorEl = document.getElementById('login-error');
+
+  if (age < 18) {
+    errorEl.textContent = "Error: You must be at least 18 years old to vote.";
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
+  let user = db.users.find(u => u.name.toLowerCase() === name.toLowerCase());
+  
+  if (!user) {
+    user = { name, age, district, hasVoted: false };
+    db.users.push(user);
+    localStorage.setItem('tn_mock_db_v2', JSON.stringify(db));
+  }
+
+  currentUser = user;
+  localStorage.setItem('tn_mock_user_v2', JSON.stringify(user));
+  errorEl.style.display = 'none';
+  checkVotingStatus();
+}
+
+function checkVotingStatus() {
+  if (!currentUser) {
+    switchView('view-login');
+  } else if (currentUser.hasVoted) {
+    document.getElementById('success-name').textContent = currentUser.name;
+    switchView('view-voted');
+  } else {
+    document.getElementById('voter-badge').textContent = `${currentUser.district} District`;
+    switchView('view-voting');
+  }
+}
+
+function renderCandidates() {
+  const container = document.getElementById('candidates-container');
+  container.innerHTML = candidatesData.map(c => `
+    <div class="cm-card ${selectedCandidateId === c.id ? 'selected' : ''}" onclick="selectCandidate('${c.id}')">
+      <div class="avatar" style="${!c.photo ? 'background:#f5f5f5; color:#757575;' : ''}">
+        ${c.photo ? `<img src="${c.photo}" alt="${c.nameEn}">` : '<b>✗</b>'}
+      </div>
+      <div class="cm-info">
+        <div class="cm-name">${c.nameEn}</div>
+        <div class="party-badge">
+          <div class="flag" style="background: ${c.flagBg};"></div>
+          ${c.party}
+        </div>
+      </div>
+      <div class="radio-dot"></div>
+    </div>
+  `).join('');
+}
+
+function selectCandidate(id) {
+  selectedCandidateId = id;
+  document.getElementById('cast-vote-btn').disabled = false;
+  renderCandidates();
+}
+
+function castVote() {
+  if (!currentUser || currentUser.hasVoted || !selectedCandidateId) return;
+  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
+  db.votes[selectedCandidateId]++;
+  db.totalVotes++;
+  const dbUser = db.users.find(u => u.name === currentUser.name);
+  if (dbUser) dbUser.hasVoted = true;
+  currentUser.hasVoted = true;
+  localStorage.setItem('tn_mock_db_v2', JSON.stringify(db));
+  localStorage.setItem('tn_mock_user_v2', JSON.stringify(currentUser));
+  checkVotingStatus();
+}
+
+// ── LIVE RESULTS ──
+let liveInterval = null;
+
+function renderResults() {
+  const container = document.getElementById('results-container');
+
+  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
+  const sorted = [...candidatesData].sort((a, b) => (db.votes[b.id] || 0) - (db.votes[a.id] || 0));
+
+  container.innerHTML = sorted.map(c => `
+    <div class="result-item">
+      <div class="result-header">
+        <div class="result-party-info">
+          <div class="result-avatar">
+            ${c.photo
+              ? `<img src="${c.photo}" alt="${c.nameEn}" onerror="this.style.display='none';this.parentElement.innerHTML='<b style=font-size:11px;color:#999>✗</b>'">`
+              : '<b style="font-size:13px;color:#999;">✗</b>'}
+          </div>
+          <div>
+            <div class="result-name">${c.nameEn}</div>
+            <div style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+              <div class="flag" style="background:${c.flagBg};"></div>${c.party}
+            </div>
+          </div>
+          <span class="leading-tag" id="lead-${c.id}" style="display:none;">🏆 Leading</span>
+        </div>
+        <span class="result-pct-label" id="pct-${c.id}" style="color:${c.color};">0.0%</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill" id="bar-${c.id}" style="background:${c.color};width:0%;"></div>
+      </div>
+      <div class="result-sub" id="sub-${c.id}">0 votes</div>
+    </div>
+  `).join('');
+
+  updateLiveBars();
+  if (liveInterval) clearInterval(liveInterval);
+  liveInterval = setInterval(updateLiveBars, 1500);
+}
+
+function updateLiveBars() {
+  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
+  const total = db.totalVotes || 0;
+
+  document.getElementById('total-votes-big').textContent = total.toLocaleString();
+
+  const leaderId = total > 0 ? candidatesData.reduce((best, c) =>
+    (db.votes[c.id] || 0) > (db.votes[best] || 0) ? c.id : best,
+    candidatesData[0].id
+  ) : null;
+  const leader = leaderId ? candidatesData.find(c => c.id === leaderId) : null;
+  document.getElementById('leading-name-big').textContent = leader ? leader.nameEn : '—';
+
+  candidatesData.forEach(c => {
+    const votes = db.votes[c.id] || 0;
+    const pct = total > 0 ? (votes / total) * 100 : 0;
+
+    const bar    = document.getElementById('bar-'  + c.id);
+    const pctEl  = document.getElementById('pct-'  + c.id);
+    const subEl  = document.getElementById('sub-'  + c.id);
+    const leadEl = document.getElementById('lead-' + c.id);
+
+    if (bar)    bar.style.width   = pct.toFixed(2) + '%';
+    if (pctEl)  pctEl.textContent = pct.toFixed(1) + '%';
+    if (subEl)  subEl.textContent = total === 0 ? 'No votes yet' : `${votes.toLocaleString()} votes out of ${total.toLocaleString()}`;
+    if (leadEl) leadEl.style.display = (leaderId && c.id === leaderId) ? 'inline-block' : 'none';
+  });
+}
+
+
+
+function renderAdmin() {
+  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
+  const tbody = document.getElementById('admin-users-list');
+  if (db.users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--text-muted);">No users registered yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = db.users.map(u => `
+    <tr>
+      <td><strong>${u.name}</strong></td>
+      <td>${u.age}</td>
+      <td>${u.district}</td>
+      <td>
+        <span style="color: ${u.hasVoted ? 'var(--success)' : '#d32f2f'}; font-weight: 600; font-size: 11px; padding: 2px 6px; background: ${u.hasVoted ? '#e8f5e9' : '#ffebee'}; border-radius: 10px;">
+          ${u.hasVoted ? 'VOTED' : 'PENDING'}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function resetElection() {
+  if (confirm("WARNING: This will delete all users and reset the vote counts. Are you sure?")) {
+    localStorage.removeItem('tn_mock_db_v2');
+    localStorage.removeItem('tn_mock_user_v2');
+    currentUser = null;
+    selectedCandidateId = null;
+    window.location.reload();
+  }
+}
+
+function promptAdmin() {
+  const code = prompt("Enter Admin PIN:");
+  if (code === "J@isan1107") switchView('view-admin');
+  else if (code !== null) alert("Incorrect PIN.");
+}
+
+window.onload = () => {
+  if (currentUser) checkVotingStatus();
+  else switchView('view-login');
+};
+</script>
+</body>
+</html>
+
+</body>
+</html>
