@@ -202,21 +202,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, set, update, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// ── Firebase config (free Realtime DB) ──
-// SETUP STEPS (one time, free):
-// 1. Go to https://console.firebase.google.com
-// 2. Create a new project (e.g. "tn-mock-election")
-// 3. Go to Build → Realtime Database → Create Database → Start in test mode
-// 4. Go to Project Settings → Your Apps → Add Web App
-// 5. Copy your config values below and replace the placeholders
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey:            "AIzaSyDnaeJssL80_5fUGyWqtTXnhd2d793pMAw",
+  authDomain:        "tn-mock-election-d8ead.firebaseapp.com",
+  databaseURL:       "https://tn-mock-election-d8ead-default-rtdb.firebaseio.com",
+  projectId:         "tn-mock-election-d8ead",
+  storageBucket:     "tn-mock-election-d8ead.firebasestorage.app",
+  messagingSenderId: "69327778615",
+  appId:             "1:69327778615:web:12e2c85257c2619b04e0b2",
+  measurementId:     "G-YND4E3V9FJ"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -499,6 +493,8 @@ initDB().then(() => {
   else switchView('view-login');
 });
 </script>
+</body>
+</html>
 </body>
 </html>
 </body>
