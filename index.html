@@ -4,7 +4,6 @@
 </head>
 
 <body>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -236,18 +235,17 @@ const candidatesData = [
   }
 ];
 
-// Always start fresh — clear old data
-localStorage.removeItem('tn_mock_db_v2');
-localStorage.removeItem('tn_mock_user_v2');
+// Only initialize if no data exists — never wipe on reload
+if (!localStorage.getItem('tn_mock_db_v2')) {
+  const initialDb = {
+    users: [],
+    votes: { stalin: 0, eps: 0, vijay: 0, seeman: 0, nota: 0 },
+    totalVotes: 0
+  };
+  localStorage.setItem('tn_mock_db_v2', JSON.stringify(initialDb));
+}
 
-const initialDb = {
-  users: [],
-  votes: { stalin: 0, eps: 0, vijay: 0, seeman: 0, nota: 0 },
-  totalVotes: 0
-};
-localStorage.setItem('tn_mock_db_v2', JSON.stringify(initialDb));
-
-let currentUser = null;
+let currentUser = JSON.parse(localStorage.getItem('tn_mock_user_v2')) || null;
 let selectedCandidateId = null;
 
 function switchView(viewId) {
@@ -459,6 +457,8 @@ window.onload = () => {
   else switchView('view-login');
 };
 </script>
+</body>
+</html>
 </body>
 </html>
 
