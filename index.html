@@ -98,6 +98,12 @@
 </head>
 <body>
 
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+    <div style="width:36px;height:36px;border:4px solid #fff;border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <div id="loading-msg" style="color:#fff;font-size:14px;font-weight:600;">Please wait...</div>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
 <div id="app-container">
   <div class="hero">
     <h1>🏛️ TN Election 2026</h1>
@@ -175,6 +181,7 @@
   <div id="view-admin" class="view">
     <h2 style="font-size: 18px; margin-bottom: 1rem;">Admin Dashboard</h2>
     <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 1rem;">Overview of registered voters in this session.</p>
+    <div id="admin-vote-summary" style="font-size:12px;color:var(--text-muted);background:#f9f9f9;padding:10px;border-radius:8px;margin-bottom:1rem;line-height:1.8;"></div>
     <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
       <table class="admin-table">
         <thead><tr><th>Name</th><th>Age</th><th>District</th><th>Status</th></tr></thead>
@@ -191,63 +198,63 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, update, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── Firebase config (free Realtime DB) ──
+// SETUP STEPS (one time, free):
+// 1. Go to https://console.firebase.google.com
+// 2. Create a new project (e.g. "tn-mock-election")
+// 3. Go to Build → Realtime Database → Create Database → Start in test mode
+// 4. Go to Project Settings → Your Apps → Add Web App
+// 5. Copy your config values below and replace the placeholders
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
 const candidatesData = [
-  { 
-    id: 'stalin', 
-    nameEn: "M. K. Stalin", 
-    party: "DMK", 
-    color: "#E53935", 
-    photo: "https://tn-mock-election2026.netlify.app/assets/stalin-BL6kc50k.jpg", 
-    flagBg: "linear-gradient(to bottom, #d32f2f 50%, #000000 50%)" 
-  },
-  { 
-    id: 'eps', 
-    nameEn: "E. K. Palaniswami", 
-    party: "ADMK", 
-    color: "#43A047", 
-    photo: "https://tn-mock-election2026.netlify.app/assets/edapadi-Cc674AIS.jpg", 
-    flagBg: "linear-gradient(to bottom, #000000 33%, #ffffff 33%, #ffffff 66%, #d32f2f 66%)" 
-  },
-  { 
-    id: 'vijay', 
-    nameEn: "Vijay", 
-    party: "TVK", 
-    color: "#F9A825", 
-    photo: "https://tn-mock-election2026.netlify.app/assets/vijay-BKFnhox8.jpg", 
-    flagBg: "linear-gradient(to bottom, #b71c1c 50%, #fbc02d 50%)" 
-  },
-  { 
-    id: 'seeman', 
-    nameEn: "Seeman", 
-    party: "NTK", 
-    color: "#FB8C00", 
-    photo: "https://tn-mock-election2026.netlify.app/assets/seeman-BKm8RPIs.jpeg", 
-    flagBg: "linear-gradient(to bottom, #d32f2f 50%, #fbc02d 50%)" 
-  },
-  { 
-    id: 'nota', 
-    nameEn: "NOTA", 
-    party: "None", 
-    color: "#9E9E9E", 
-    photo: null, 
-    flagBg: "#eeeeee" 
-  }
+  { id:'stalin', nameEn:"M. K. Stalin",        party:"DMK",  color:"#E53935", photo:"https://tn-mock-election2026.netlify.app/assets/stalin-BL6kc50k.jpg",   flagBg:"linear-gradient(to bottom,#d32f2f 50%,#000 50%)" },
+  { id:'eps',    nameEn:"E. K. Palaniswami",    party:"ADMK", color:"#43A047", photo:"https://tn-mock-election2026.netlify.app/assets/edapadi-Cc674AIS.jpg",  flagBg:"linear-gradient(to bottom,#000 33%,#fff 33%,#fff 66%,#d32f2f 66%)" },
+  { id:'vijay',  nameEn:"Vijay",                party:"TVK",  color:"#F9A825", photo:"https://tn-mock-election2026.netlify.app/assets/vijay-BKFnhox8.jpg",    flagBg:"linear-gradient(to bottom,#b71c1c 50%,#fbc02d 50%)" },
+  { id:'seeman', nameEn:"Seeman",               party:"NTK",  color:"#FB8C00", photo:"https://tn-mock-election2026.netlify.app/assets/seeman-BKm8RPIs.jpeg",  flagBg:"linear-gradient(to bottom,#d32f2f 50%,#fbc02d 50%)" },
+  { id:'nota',   nameEn:"NOTA",                 party:"None", color:"#9E9E9E", photo:null,                                                                     flagBg:"#eee" }
 ];
 
-// Only initialize if no data exists — never wipe on reload
-if (!localStorage.getItem('tn_mock_db_v2')) {
-  const initialDb = {
-    users: [],
-    votes: { stalin: 0, eps: 0, vijay: 0, seeman: 0, nota: 0 },
-    totalVotes: 0
-  };
-  localStorage.setItem('tn_mock_db_v2', JSON.stringify(initialDb));
+let currentUser        = JSON.parse(localStorage.getItem('tn_voter_v3')) || null;
+let selectedCandidateId = null;
+let liveInterval       = null;
+
+// ── Show loading overlay ──
+function showLoading(msg) {
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('loading-msg').textContent = msg || 'Please wait...';
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').style.display = 'none';
 }
 
-let currentUser = JSON.parse(localStorage.getItem('tn_mock_user_v2')) || null;
-let selectedCandidateId = null;
+// ── Init DB structure if first time ──
+async function initDB() {
+  showLoading('Connecting to server...');
+  const snap = await get(ref(db, 'votes'));
+  if (!snap.exists()) {
+    await set(ref(db, 'votes'), { stalin:0, eps:0, vijay:0, seeman:0, nota:0 });
+    await set(ref(db, 'totalVotes'), 0);
+  }
+  hideLoading();
+}
 
+// ── View switching ──
 function switchView(viewId) {
   if (viewId !== 'view-results' && liveInterval) {
     clearInterval(liveInterval);
@@ -255,44 +262,52 @@ function switchView(viewId) {
   }
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
-  if (viewId === 'view-voting') renderCandidates();
+  if (viewId === 'view-voting')  renderCandidates();
   if (viewId === 'view-results') renderResults();
-  if (viewId === 'view-admin') renderAdmin();
+  if (viewId === 'view-admin')   renderAdmin();
 }
+window.switchView = switchView;
 
 function attemptGoHome() {
   if (!currentUser) switchView('view-login');
   else if (currentUser.hasVoted) switchView('view-voted');
   else switchView('view-voting');
 }
+window.attemptGoHome = attemptGoHome;
 
-function handleLogin(e) {
+// ── Login ──
+async function handleLogin(e) {
   e.preventDefault();
-  const name = document.getElementById('userName').value.trim();
-  const age = parseInt(document.getElementById('userAge').value);
+  const name     = document.getElementById('userName').value.trim();
+  const age      = parseInt(document.getElementById('userAge').value);
   const district = document.getElementById('userDistrict').value;
-  const errorEl = document.getElementById('login-error');
+  const errorEl  = document.getElementById('login-error');
 
   if (age < 18) {
-    errorEl.textContent = "Error: You must be at least 18 years old to vote.";
+    errorEl.textContent = 'Error: You must be at least 18 years old to vote.';
     errorEl.style.display = 'block';
     return;
   }
 
-  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
-  let user = db.users.find(u => u.name.toLowerCase() === name.toLowerCase());
-  
-  if (!user) {
+  showLoading('Verifying voter...');
+  const key      = name.toLowerCase().replace(/\s+/g, '_');
+  const userSnap = await get(ref(db, 'users/' + key));
+  let   user;
+
+  if (userSnap.exists()) {
+    user = userSnap.val();
+  } else {
     user = { name, age, district, hasVoted: false };
-    db.users.push(user);
-    localStorage.setItem('tn_mock_db_v2', JSON.stringify(db));
+    await set(ref(db, 'users/' + key), user);
   }
 
   currentUser = user;
-  localStorage.setItem('tn_mock_user_v2', JSON.stringify(user));
+  localStorage.setItem('tn_voter_v3', JSON.stringify(user));
   errorEl.style.display = 'none';
+  hideLoading();
   checkVotingStatus();
 }
+window.handleLogin = handleLogin;
 
 function checkVotingStatus() {
   if (!currentUser) {
@@ -306,17 +321,18 @@ function checkVotingStatus() {
   }
 }
 
+// ── Candidates ──
 function renderCandidates() {
   const container = document.getElementById('candidates-container');
   container.innerHTML = candidatesData.map(c => `
     <div class="cm-card ${selectedCandidateId === c.id ? 'selected' : ''}" onclick="selectCandidate('${c.id}')">
-      <div class="avatar" style="${!c.photo ? 'background:#f5f5f5; color:#757575;' : ''}">
+      <div class="avatar" style="${!c.photo ? 'background:#f5f5f5;color:#757575;' : ''}">
         ${c.photo ? `<img src="${c.photo}" alt="${c.nameEn}">` : '<b>✗</b>'}
       </div>
       <div class="cm-info">
         <div class="cm-name">${c.nameEn}</div>
         <div class="party-badge">
-          <div class="flag" style="background: ${c.flagBg};"></div>
+          <div class="flag" style="background:${c.flagBg};"></div>
           ${c.party}
         </div>
       </div>
@@ -330,36 +346,45 @@ function selectCandidate(id) {
   document.getElementById('cast-vote-btn').disabled = false;
   renderCandidates();
 }
+window.selectCandidate = selectCandidate;
 
-function castVote() {
+// ── Cast Vote (atomic transaction) ──
+async function castVote() {
   if (!currentUser || currentUser.hasVoted || !selectedCandidateId) return;
-  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
-  db.votes[selectedCandidateId]++;
-  db.totalVotes++;
-  const dbUser = db.users.find(u => u.name === currentUser.name);
-  if (dbUser) dbUser.hasVoted = true;
-  currentUser.hasVoted = true;
-  localStorage.setItem('tn_mock_db_v2', JSON.stringify(db));
-  localStorage.setItem('tn_mock_user_v2', JSON.stringify(currentUser));
-  checkVotingStatus();
+  document.getElementById('cast-vote-btn').disabled = true;
+  showLoading('Recording your vote...');
+
+  try {
+    // Atomically increment vote count
+    await runTransaction(ref(db, 'votes/' + selectedCandidateId), v => (v || 0) + 1);
+    await runTransaction(ref(db, 'totalVotes'), v => (v || 0) + 1);
+
+    // Mark user as voted
+    const key = currentUser.name.toLowerCase().replace(/\s+/g, '_');
+    currentUser.hasVoted = true;
+    await update(ref(db, 'users/' + key), { hasVoted: true });
+    localStorage.setItem('tn_voter_v3', JSON.stringify(currentUser));
+
+    hideLoading();
+    checkVotingStatus();
+  } catch (err) {
+    hideLoading();
+    alert('Error saving vote. Please try again.');
+    document.getElementById('cast-vote-btn').disabled = false;
+  }
 }
+window.castVote = castVote;
 
-// ── LIVE RESULTS ──
-let liveInterval = null;
-
+// ── Live Results (Firebase onValue = real-time push) ──
 function renderResults() {
   const container = document.getElementById('results-container');
-
-  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
-  const sorted = [...candidatesData].sort((a, b) => (db.votes[b.id] || 0) - (db.votes[a.id] || 0));
-
-  container.innerHTML = sorted.map(c => `
+  container.innerHTML = candidatesData.map(c => `
     <div class="result-item">
       <div class="result-header">
         <div class="result-party-info">
           <div class="result-avatar">
             ${c.photo
-              ? `<img src="${c.photo}" alt="${c.nameEn}" onerror="this.style.display='none';this.parentElement.innerHTML='<b style=font-size:11px;color:#999>✗</b>'">`
+              ? `<img src="${c.photo}" alt="${c.nameEn}" onerror="this.style.display='none'">`
               : '<b style="font-size:13px;color:#999;">✗</b>'}
           </div>
           <div>
@@ -375,88 +400,107 @@ function renderResults() {
       <div class="bar-bg">
         <div class="bar-fill" id="bar-${c.id}" style="background:${c.color};width:0%;"></div>
       </div>
-      <div class="result-sub" id="sub-${c.id}">0 votes</div>
+      <div class="result-sub" id="sub-${c.id}">No votes yet</div>
     </div>
   `).join('');
 
-  updateLiveBars();
-  if (liveInterval) clearInterval(liveInterval);
-  liveInterval = setInterval(updateLiveBars, 1500);
-}
+  // Real-time listener — fires instantly whenever any vote is cast from any device
+  if (liveInterval) { liveInterval(); liveInterval = null; } // unsubscribe old
+  const votesRef = ref(db, '/');
+  liveInterval = onValue(votesRef, snap => {
+    const data  = snap.val() || {};
+    const votes = data.votes || {};
+    const total = data.totalVotes || 0;
 
-function updateLiveBars() {
-  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
-  const total = db.totalVotes || 0;
+    document.getElementById('total-votes-big').textContent = total.toLocaleString();
 
-  document.getElementById('total-votes-big').textContent = total.toLocaleString();
+    const leaderId = total > 0
+      ? candidatesData.reduce((best, c) => (votes[c.id]||0) > (votes[best]||0) ? c.id : best, candidatesData[0].id)
+      : null;
+    const leader = leaderId ? candidatesData.find(c => c.id === leaderId) : null;
+    document.getElementById('leading-name-big').textContent = leader ? leader.nameEn : '—';
 
-  const leaderId = total > 0 ? candidatesData.reduce((best, c) =>
-    (db.votes[c.id] || 0) > (db.votes[best] || 0) ? c.id : best,
-    candidatesData[0].id
-  ) : null;
-  const leader = leaderId ? candidatesData.find(c => c.id === leaderId) : null;
-  document.getElementById('leading-name-big').textContent = leader ? leader.nameEn : '—';
-
-  candidatesData.forEach(c => {
-    const votes = db.votes[c.id] || 0;
-    const pct = total > 0 ? (votes / total) * 100 : 0;
-
-    const bar    = document.getElementById('bar-'  + c.id);
-    const pctEl  = document.getElementById('pct-'  + c.id);
-    const subEl  = document.getElementById('sub-'  + c.id);
-    const leadEl = document.getElementById('lead-' + c.id);
-
-    if (bar)    bar.style.width   = pct.toFixed(2) + '%';
-    if (pctEl)  pctEl.textContent = pct.toFixed(1) + '%';
-    if (subEl)  subEl.textContent = total === 0 ? 'No votes yet' : `${votes.toLocaleString()} votes out of ${total.toLocaleString()}`;
-    if (leadEl) leadEl.style.display = (leaderId && c.id === leaderId) ? 'inline-block' : 'none';
+    candidatesData.forEach(c => {
+      const v    = votes[c.id] || 0;
+      const pct  = total > 0 ? (v / total) * 100 : 0;
+      const bar    = document.getElementById('bar-'  + c.id);
+      const pctEl  = document.getElementById('pct-'  + c.id);
+      const subEl  = document.getElementById('sub-'  + c.id);
+      const leadEl = document.getElementById('lead-' + c.id);
+      if (bar)    bar.style.width   = pct.toFixed(2) + '%';
+      if (pctEl)  pctEl.textContent = pct.toFixed(1) + '%';
+      if (subEl)  subEl.textContent = total === 0 ? 'No votes yet' : `${v.toLocaleString()} votes out of ${total.toLocaleString()}`;
+      if (leadEl) leadEl.style.display = (leaderId && c.id === leaderId) ? 'inline-block' : 'none';
+    });
   });
 }
 
+// ── Admin ──
+async function renderAdmin() {
+  showLoading('Loading admin data...');
+  const [usersSnap, votesSnap, totalSnap] = await Promise.all([
+    get(ref(db, 'users')),
+    get(ref(db, 'votes')),
+    get(ref(db, 'totalVotes'))
+  ]);
+  hideLoading();
 
+  const users      = usersSnap.exists()  ? Object.values(usersSnap.val())  : [];
+  const votes      = votesSnap.exists()  ? votesSnap.val()  : {};
+  const total      = totalSnap.exists()  ? totalSnap.val()  : 0;
+  const tbody      = document.getElementById('admin-users-list');
 
-function renderAdmin() {
-  const db = JSON.parse(localStorage.getItem('tn_mock_db_v2'));
-  const tbody = document.getElementById('admin-users-list');
-  if (db.users.length === 0) {
+  // Vote summary row
+  document.getElementById('admin-vote-summary').innerHTML =
+    candidatesData.map(c => `<b>${c.nameEn}:</b> ${votes[c.id]||0}`).join(' &nbsp;|&nbsp; ') +
+    ` &nbsp;|&nbsp; <b>Total:</b> ${total}`;
+
+  if (users.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--text-muted);">No users registered yet.</td></tr>`;
     return;
   }
-  tbody.innerHTML = db.users.map(u => `
+  tbody.innerHTML = users.map(u => `
     <tr>
       <td><strong>${u.name}</strong></td>
       <td>${u.age}</td>
       <td>${u.district}</td>
-      <td>
-        <span style="color: ${u.hasVoted ? 'var(--success)' : '#d32f2f'}; font-weight: 600; font-size: 11px; padding: 2px 6px; background: ${u.hasVoted ? '#e8f5e9' : '#ffebee'}; border-radius: 10px;">
-          ${u.hasVoted ? 'VOTED' : 'PENDING'}
-        </span>
-      </td>
+      <td><span style="color:${u.hasVoted?'var(--success)':'#d32f2f'};font-weight:600;font-size:11px;padding:2px 6px;background:${u.hasVoted?'#e8f5e9':'#ffebee'};border-radius:10px;">${u.hasVoted?'VOTED':'PENDING'}</span></td>
     </tr>
   `).join('');
 }
 
-function resetElection() {
-  if (confirm("WARNING: This will delete all users and reset the vote counts. Are you sure?")) {
-    localStorage.removeItem('tn_mock_db_v2');
-    localStorage.removeItem('tn_mock_user_v2');
+async function resetElection() {
+  if (confirm('WARNING: This will delete ALL votes and users. Are you sure?')) {
+    showLoading('Resetting election...');
+    await set(ref(db, '/'), {
+      votes: { stalin:0, eps:0, vijay:0, seeman:0, nota:0 },
+      totalVotes: 0,
+      users: {}
+    });
+    localStorage.removeItem('tn_voter_v3');
     currentUser = null;
     selectedCandidateId = null;
+    hideLoading();
     window.location.reload();
   }
 }
+window.resetElection = resetElection;
 
 function promptAdmin() {
-  const code = prompt("Enter Admin PIN:");
-  if (code === "J@isan1107") switchView('view-admin');
-  else if (code !== null) alert("Incorrect PIN.");
+  const code = prompt('Enter Admin PIN:');
+  if (code === 'J@isan1107') switchView('view-admin');
+  else if (code !== null) alert('Incorrect PIN.');
 }
+window.promptAdmin = promptAdmin;
 
-window.onload = () => {
+// ── Boot ──
+initDB().then(() => {
   if (currentUser) checkVotingStatus();
   else switchView('view-login');
-};
+});
 </script>
+</body>
+</html>
 </body>
 </html>
 </body>
